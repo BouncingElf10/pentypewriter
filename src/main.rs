@@ -1,6 +1,9 @@
+mod pen_connection;
 mod pen_plotter;
+mod glyph_drawer;
 
-use pen_plotter::{PenConnection, Result};
+use pen_connection::{PenConnection, Result};
+use crate::pen_plotter::PenPlotter;
 
 fn main() {
     if let Err(e) = run() {
@@ -11,16 +14,9 @@ fn main() {
 fn run() -> Result<()> {
     let mut plotter = PenConnection::connect()?;
     println!("connected: {}", plotter.version()?);
+    let mut pen_plotter = PenPlotter::new(plotter);
 
-    plotter.send("EM,1,1")?; // enable both motors, 1/16 microstepping
-    plotter.send("SP,0")?; // pen down
 
-    // SM,<duration ms>,<axis1 steps>,<axis2 steps>
-    // Equal steps on both axes moves in a straight line along one direction.
-    plotter.send("SM,1000,4000,4000")?;
 
-    plotter.send("SP,1")?; // pen up
-    plotter.send("EM,0,0")?; // disable motors
-    println!("done");
     Ok(())
 }
