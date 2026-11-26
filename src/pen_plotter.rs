@@ -1,10 +1,3 @@
-//! Thin USB link to an EBB (EiBotBoard / AxiDraw) controller.
-//!
-//! The board shows up as a USB CDC serial port. Commands are ASCII lines
-//! terminated by `\r`; the board answers with zero or more data lines and then
-//! `OK`, or with a line starting with `!` on error. This module only handles
-//! finding the port and exchanging those lines. It knows nothing about motion.
-
 use std::fmt;
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::time::Duration;
@@ -60,32 +53,27 @@ pub fn find_ports() -> Result<Vec<String>> {
         .collect())
 }
 
-pub struct PenPlotter<T: Read + Write = Box<dyn SerialPort>> {
+pub struct PenConnection<T: Read + Write = Box<dyn SerialPort>> {
     link: BufReader<T>,
 }
 
-impl PenPlotter {
-    /// Connect to the first EBB found on USB.
+impl PenConnection {
     pub fn connect() -> Result<Self> {
         let name = find_ports()?.into_iter().next().ok_or(PlotterError::NotFound)?;
         Self::open(&name)
     }
 
-    /// Connect to a specific port, e.g. `COM3`.
     pub fn open(port: &str) -> Result<Self> {
-        // Baud rate is ignored by the USB CDC device but the API wants one.
         let port = serialport::new(port, 9600).timeout(TIMEOUT).open()?;
         Ok(Self::from_stream(port))
     }
 }
 
-impl<T: Read + Write> PenPlotter<T> {
+impl<T: Read + Write> PenConnection<T> {
     pub fn from_stream(stream: T) -> Self {
         Self { link: BufReader::new(stream) }
     }
 
-    /// Send one command (without the trailing `\r`) and return the data lines
-    /// the board sent before `OK`. Most commands return an empty vec.
     pub fn send(&mut self, cmd: &str) -> Result<Vec<String>> {
         let out = self.link.get_mut();
         out.write_all(cmd.as_bytes())?;
@@ -109,7 +97,6 @@ impl<T: Read + Write> PenPlotter<T> {
         }
     }
 
-    /// Firmware version string. `V` is the one command that has no `OK`.
     pub fn version(&mut self) -> Result<String> {
         let out = self.link.get_mut();
         out.write_all(b"V\r")?;
