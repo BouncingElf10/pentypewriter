@@ -1,15 +1,24 @@
 mod pen_connection;
 mod pen_plotter;
 mod glyph_drawer;
+mod tui;
 
+use std::collections::VecDeque;
+use std::io::stdin;
+use std::sync::mpsc;
+use std::thread;
 use pen_connection::{PenConnection, Result};
 use crate::glyph_drawer::GlyphDrawer;
 use crate::pen_plotter::PenPlotter;
+use crate::tui::Tui;
 
 fn main() {
-    if let Err(e) = run() {
-        eprintln!("error: {e}");
-    }
+    let mut tui = Tui::new();
+    tui.run().expect("shit happened");
+    
+    // if let Err(e) = run() {
+    //     eprintln!("error: {e}");
+    // }
 }
 
 fn run() -> Result<()> {

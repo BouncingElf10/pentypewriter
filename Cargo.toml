@@ -6,4 +6,5 @@ edition = "2024"
 [dependencies]
 serialport = "4.10.1"
 ttf-parser = "0.25"
-kurbo = "*"
+kurbo = "0.13.1"
+ratatui = "0.30.2"
