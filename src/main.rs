@@ -3,6 +3,7 @@ mod pen_plotter;
 mod glyph_drawer;
 
 use pen_connection::{PenConnection, Result};
+use crate::glyph_drawer::GlyphDrawer;
 use crate::pen_plotter::PenPlotter;
 
 fn main() {
@@ -16,7 +17,7 @@ fn run() -> Result<()> {
     println!("connected: {}", plotter.version()?);
     let mut pen_plotter = PenPlotter::new(plotter);
 
-
+    let mut glyph_drawer = GlyphDrawer::new();
 
     Ok(())
 }
