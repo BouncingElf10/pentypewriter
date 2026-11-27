@@ -9,6 +9,8 @@ pub struct PenPlotter {
 
 pub type Result<T> = std::result::Result<T, PlotterError>;
 
+const DEFAULT_STEP_DURATION: i32 = 1;
+
 impl PenPlotter {
 	pub fn new(connection: PenConnection) -> Self {
 		Self { connection, offset: (0, 0), cursor: (0, 0) }
@@ -17,14 +19,14 @@ impl PenPlotter {
 	pub fn move_to(&mut self, x: i32, y: i32) -> Result<()> {
 		self.pen_up()?;
 		self.cursor = (x, y);
-		self.step((x - self.cursor.0) + self.offset.0, (y - self.cursor.1) + self.offset.1, 200)?;
+		self.step((x - self.cursor.0) + self.offset.0, (y - self.cursor.1) + self.offset.1)?;
 		Ok(())
 	}
 
 	pub fn line_to(&mut self, x: i32, y: i32) -> Result<()> {
 		self.pen_down()?;
 		self.cursor = (x, y);
-		self.step((x - self.cursor.0) + self.offset.0, (y - self.cursor.1) + self.offset.1, 200)?;
+		self.step((x - self.cursor.0) + self.offset.0, (y - self.cursor.1) + self.offset.1)?;
 		Ok(())
 	}
 
@@ -68,8 +70,9 @@ impl PenPlotter {
 		Ok(())
 	}
 
-	pub fn step(&mut self, step_x: i32, step_y: i32, milliseconds: i32) -> Result<()> {
-		self.connection.send(format!("SM,{},{},{}", milliseconds, step_x, step_y).as_str())?;
+	pub fn step(&mut self, step_x: i32, step_y: i32) -> Result<()> {
+		let duration = ((step_x * step_x) + (step_y * step_y)).isqrt() * DEFAULT_STEP_DURATION;
+		self.connection.send(format!("SM,{},{},{}", duration, step_x, step_y).as_str())?;
 		Ok(())
 	}
 

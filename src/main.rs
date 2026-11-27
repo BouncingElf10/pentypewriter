@@ -15,7 +15,7 @@ use crate::pen_plotter::PenPlotter;
 use crate::tui::Tui;
 
 fn main() -> io::Result<()> {
-    let chars = Arc::new(Mutex::new(VecDeque::new()));
+    let chars = Arc::new(Mutex::new((VecDeque::new(), VecDeque::new())));
     let plot_chars = Arc::clone(&chars);
     let (sender, receiver) = mpsc::channel::<PlotterError>();
 
@@ -28,17 +28,18 @@ fn main() -> io::Result<()> {
     Tui::new(chars).run(receiver)
 }
 
-fn plot_loop(chars: Arc<Mutex<VecDeque<char>>>) -> Result<()> {
+fn plot_loop(chars: Arc<Mutex<(VecDeque<char>, VecDeque<char>)>>) -> Result<()> {
     let plotter = PenConnection::connect()?;
     let mut pen_plotter = PenPlotter::new(plotter);
     let mut glyph_drawer = GlyphDrawer::new();
 
     loop {
-        let next = chars.lock().unwrap().pop_front();
+        let next = chars.lock().unwrap().0.pop_front();
         match next {
             Some(c) => {
                 glyph_drawer.queue(c);
                 glyph_drawer.plot_next(&mut pen_plotter)?;
+                chars.lock().unwrap().1.push_back(c);
             }
             None => thread::sleep(Duration::from_millis(20)),
         }
