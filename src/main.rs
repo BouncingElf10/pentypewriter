@@ -4,34 +4,43 @@ mod glyph_drawer;
 mod tui;
 
 use std::collections::VecDeque;
-use std::io::stdin;
-use std::sync::mpsc;
+use std::io;
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
+use std::time::Duration;
 use pen_connection::{PenConnection, Result};
 use crate::glyph_drawer::GlyphDrawer;
+use crate::pen_connection::PlotterError;
 use crate::pen_plotter::PenPlotter;
 use crate::tui::Tui;
 
-fn main() {
-    let mut tui = Tui::new();
-    tui.run().expect("shit happened");
-    
-    // if let Err(e) = run() {
-    //     eprintln!("error: {e}");
-    // }
+fn main() -> io::Result<()> {
+    let chars = Arc::new(Mutex::new(VecDeque::new()));
+    let plot_chars = Arc::clone(&chars);
+    let (sender, receiver) = mpsc::channel::<PlotterError>();
+
+    thread::spawn(move || {
+        if let Err(e) = plot_loop(plot_chars) {
+            sender.send(e).unwrap();
+        }
+    });
+
+    Tui::new(chars).run(receiver)
 }
 
-fn run() -> Result<()> {
-    let mut plotter = PenConnection::connect()?;
-    println!("connected: {}", plotter.version()?);
+fn plot_loop(chars: Arc<Mutex<VecDeque<char>>>) -> Result<()> {
+    let plotter = PenConnection::connect()?;
     let mut pen_plotter = PenPlotter::new(plotter);
-
     let mut glyph_drawer = GlyphDrawer::new();
 
-    glyph_drawer.queue('M');
-    glyph_drawer.queue('B');
-
-    glyph_drawer.plot_next(&mut pen_plotter)?;
-
-    Ok(())
+    loop {
+        let next = chars.lock().unwrap().pop_front();
+        match next {
+            Some(c) => {
+                glyph_drawer.queue(c);
+                glyph_drawer.plot_next(&mut pen_plotter)?;
+            }
+            None => thread::sleep(Duration::from_millis(20)),
+        }
+    }
 }
