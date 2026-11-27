@@ -53,7 +53,7 @@ impl GlyphDrawer {
 		self.queue.push_back(queue);
 	}
 
-	pub fn plot_next(&mut self, mut pen_plotter: PenPlotter) -> Result<(), PlotterError> {
+	pub fn plot_next(&mut self, pen_plotter: &mut PenPlotter) -> Result<(), PlotterError> {
 		if let Some(queue) = self.queue.pop_front() {
 			for command in queue.queue {
 				match command {
@@ -61,7 +61,7 @@ impl GlyphDrawer {
 					LineTo(x, y) => pen_plotter.line_to(x as i32, y as i32)?,
 					QuadTo(x1, y1, x, y) => pen_plotter.quad_to(x1 as i32, y1 as i32, x as i32, y as i32)?,
 					CurveTo(x1, y1, x2, y2, x, y) => pen_plotter.curve_to(x1 as i32, y1 as i32, x2 as i32, y2 as i32, x as i32, y as i32)?,
-					Close => pen_plotter.close(),
+					Close => pen_plotter.close()?,
 				}
 			}
 			pen_plotter.new_char(queue.width)?;

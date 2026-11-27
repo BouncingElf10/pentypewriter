@@ -19,5 +19,10 @@ fn run() -> Result<()> {
 
     let mut glyph_drawer = GlyphDrawer::new();
 
+    glyph_drawer.queue('M');
+    glyph_drawer.queue('B');
+
+    glyph_drawer.plot_next(&mut pen_plotter)?;
+
     Ok(())
 }
