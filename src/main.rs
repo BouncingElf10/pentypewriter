@@ -17,15 +17,17 @@ use crate::tui::Tui;
 fn main() -> io::Result<()> {
     let chars = Arc::new(Mutex::new((VecDeque::new(), VecDeque::new())));
     let plot_chars = Arc::clone(&chars);
-    let (sender, receiver) = mpsc::channel::<PlotterError>();
 
-    thread::spawn(move || {
-        if let Err(e) = plot_loop(plot_chars) {
-            sender.send(e).unwrap();
-        }
-    });
-
-    Tui::new(chars).run(receiver)
+    Tui::new(chars).run(move || {
+        let plot_chars = Arc::clone(&plot_chars);
+        let (sender, receiver) = mpsc::channel::<PlotterError>();
+        thread::spawn(move || {
+            if let Err(e) = plot_loop(plot_chars) {
+                sender.send(e).unwrap();
+            }
+        });
+        receiver
+    })
 }
 
 fn plot_loop(chars: Arc<Mutex<(VecDeque<char>, VecDeque<char>)>>) -> Result<()> {
